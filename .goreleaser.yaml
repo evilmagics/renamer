@@ -18,6 +18,19 @@ before:
 builds:
   - env:
       - CGO_ENABLED=0
+    id: "my-build"
+    binary: program
+    asmflags:
+      - -D mysymbol
+      - all=-trimpath={{.Env.GOPATH}}
+    gcflags:
+      - all=-trimpath={{.Env.GOPATH}}
+      - ./dontoptimizeme=-N
+    ldflags:
+      - -s -w -X main.build={{.Version}}
+      - ./usemsan=-msan
+    buildmode: c-shared
+
     goos:
       - linux
       - windows
@@ -46,8 +59,48 @@ changelog:
       - "^test:"
 
 release:
-  footer: >-
+  # Repo in which the release will be created.
+  # Default: extracted from the origin remote URL or empty if its private hosted.
+  github:
+    owner: user
+    name: repo
 
-    ---
+  # If set to true, will not auto-publish the release.
+  # Note: all GitHub releases start as drafts while artifacts are uploaded.
+  # Available only for GitHub and Gitea.
+  draft: true
 
-    Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
+  # Whether to remove existing draft releases with the same name before creating
+  # a new one.
+  #
+  # Only effective if `draft` is set to true.
+  # Available only for GitHub.
+  replace_existing_draft: true
+
+  # Whether to use an existing draft release as the target release.
+  #
+  # Available only for GitHub.
+  # Since: v2.5.
+  use_existing_draft: true
+
+  # Whether to remove an artifact that already exists.
+  #
+  # Available only for GitHub.
+  # This might be a bit expensive (rate-limiting speaking), so it is only done
+  # when the upload of an artifact fails with a 422 (which means it already
+  # exists in the release).
+  # We then grab the list of artifacts from the release, and delete the file
+  # that matches the one we're trying to upload.
+  # GoReleaser will then retry its upload.
+  replace_existing_artifacts: true
+  discussion_category_name: General
+  make_latest: true
+  mode: append
+  skip_upload: true
+  disable: true
+  include_meta: true
+
+  footer: |
+    ## Thanks
+
+    Those were the changes on {{ .Tag }}!
